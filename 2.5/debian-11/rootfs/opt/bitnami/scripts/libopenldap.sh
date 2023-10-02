@@ -198,7 +198,7 @@ is_ldap_not_running() {
 ldap_start_bg() {
     local -r retries="${1:-12}"
     local -r sleep_time="${2:-1}"
-    local -a flags=("-h" "ldap://:${LDAP_PORT_NUMBER}/ ldapi:/// " "-F" "${LDAP_CONF_DIR}/slapd.d" "-d" "$LDAP_LOGLEVEL")
+    local -a flags=("-h" "ldap://:${LDAP_PORT_NUMBER}/ " "-F" "${LDAP_CONF_DIR}/slapd.d" "-d" "$LDAP_LOGLEVEL")
 
     if is_ldap_not_running; then
         info "Starting OpenLDAP server in background"

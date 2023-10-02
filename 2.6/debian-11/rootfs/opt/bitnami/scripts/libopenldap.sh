@@ -214,7 +214,7 @@ is_ldap_not_running() {
 ldap_start_bg() {
     local -r retries="${1:-12}"
     local -r sleep_time="${2:-1}"
-    local -a flags=("-h" "ldap://:${LDAP_PORT_NUMBER}/ ldapi:/// " "-F" "${LDAP_CONF_DIR}/slapd.d" "-d" "$LDAP_LOGLEVEL")
+    local -a flags=("-h" "ldap://:${LDAP_PORT_NUMBER}/ " "-F" "${LDAP_CONF_DIR}/slapd.d" "-d" "$LDAP_LOGLEVEL")
 
     if is_ldap_not_running; then
         info "Starting OpenLDAP server in background"
@@ -404,7 +404,12 @@ add: olcRootPW
 olcRootPW: $LDAP_ENCRYPTED_CONFIG_ADMIN_PASSWORD
 EOF
     fi
-    debug_execute ldapmodify -Y EXTERNAL -H "ldapi:///" -f "${LDAP_SHARE_DIR}/admin.ldif"
+    #debug_execute ldapmodify -Y EXTERNAL -H "ldapi:///" -f "${LDAP_SHARE_DIR}/admin.ldif"
+    info "Loading admin ldif from ${LDAP_SHARE_DIR}/admin.ldif"
+    # -F "$LDAP_ONLINE_CONF_DIR" -n 0 -l "${LDAP_SHARE_DIR}/slapd.ldif
+    debug_execute slapmodify -F "$LDAP_ONLINE_CONF_DIR" -n 0 -l "${LDAP_SHARE_DIR}/admin.ldif"
+    info "Loaded admin ldif"
+    # debug_execute ldapmodify -H "ldap://:${LDAP_PORT_NUMBER}/" -D "${LDAP_ADMIN_DN}" -w $LDAP_ADMIN_PASSWORD -f "${LDAP_SHARE_DIR}/admin.ldif"
 }
 
 ########################
@@ -445,7 +450,11 @@ ldap_add_schemas() {
     info "Adding LDAP extra schemas"
     read -r -a schemas <<< "$(tr ',;' ' ' <<< "${LDAP_EXTRA_SCHEMAS}")"
     for schema in "${schemas[@]}"; do
-        debug_execute ldapadd -Y EXTERNAL -H "ldapi:///" -f "${LDAP_CONF_DIR}/schema/${schema}.ldif"
+        info "Loading extra schemas from ${LDAP_CONF_DIR}/schema/${schema}.ldif"
+        # debug_execute ldapadd -Y EXTERNAL -H "ldapi:///" -f "${LDAP_CONF_DIR}/schema/${schema}.ldif"
+        debug_execute slapadd -F "$LDAP_ONLINE_CONF_DIR" -n 0 -l "${LDAP_CONF_DIR}/schema/${schema}.ldif"
+        info "Loaded extra schemas from ${LDAP_CONF_DIR}/schema/${schema}.ldif"
+
     done
 }
 
@@ -551,8 +560,13 @@ EOF
 member: ${user/#/cn=},${LDAP_USER_DC/#/ou=},${LDAP_ROOT}
 EOF
     done
+    info "Loading default tree from ${LDAP_SHARE_DIR}/tree.ldif"
 
-    debug_execute ldapadd -f "${LDAP_SHARE_DIR}/tree.ldif" -H "ldapi:///" -D "$LDAP_ADMIN_DN" -w "$LDAP_ADMIN_PASSWORD"
+    #debug_execute ldapadd -f "${LDAP_SHARE_DIR}/tree.ldif" -H "ldapi:///" -D "$LDAP_ADMIN_DN" -w "$LDAP_ADMIN_PASSWORD"
+    debug_execute slapadd -F "$LDAP_ONLINE_CONF_DIR" -n 2 -l "${LDAP_SHARE_DIR}/tree.ldif"
+    info "Loaded default tree from ${LDAP_SHARE_DIR}/tree.ldif"
+
+
 }
 
 ########################
@@ -607,8 +621,8 @@ ldap_initialize() {
     else
         # Create OpenLDAP online configuration
         ldap_create_online_configuration
-        ldap_start_bg
         ldap_admin_credentials
+        #ldap_start_bg
         if ! is_boolean_yes "$LDAP_ALLOW_ANON_BINDING"; then
             ldap_disable_anon_binding
         fi
@@ -654,7 +668,7 @@ ldap_initialize() {
         else
             info "Skipping default schemas/tree structure"
         fi
-        ldap_stop
+        #ldap_stop
     fi
 }
 

@@ -24,7 +24,7 @@ ulimit -n "$LDAP_ULIMIT_NOFILES"
 flags=("-h" "ldap://:${LDAP_PORT_NUMBER}/")
 
 # Add LDAPS URI when TLS is enabled
-is_boolean_yes "$LDAP_ENABLE_TLS" && flags=("-h" "ldap://:${LDAP_PORT_NUMBER}/ ldaps://:${LDAP_LDAPS_PORT_NUMBER}/ ldapi:///")
+is_boolean_yes "$LDAP_ENABLE_TLS" && flags=("-h" "ldap://:${LDAP_PORT_NUMBER}/ ldaps://:${LDAP_LDAPS_PORT_NUMBER}/")
 
 # Add "@" so users can add extra command line flags
 flags+=("-F" "${LDAP_CONF_DIR}/slapd.d" "-d" "$LDAP_LOGLEVEL" "$@")
